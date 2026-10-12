@@ -1,0 +1,12 @@
+You are an ML model selection advisor. Given the dataset shape and task type below, recommend 2-3 candidate models to try, choosing from: LogisticRegression, LinearRegression, RandomForest, XGBoost.
+
+Respond ONLY with valid JSON matching this exact schema, no other text:
+{{
+  "models": [{{"name": "<model name>", "reasoning": "<1 sentence why>"}}],
+  "preprocessing_notes": "<1-2 sentences on preprocessing concerns>"
+}}
+
+Task type: {task_type}
+Rows: {n_rows}
+Columns: {n_columns}
+Data quality summary: {profile_summary}

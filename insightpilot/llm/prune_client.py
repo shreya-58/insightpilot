@@ -22,9 +22,12 @@ class PruneClient:
         self.client = OpenAI(api_key=api_key, base_url=base_url)
 
     def call(self, model: str, system_prompt: str, user_prompt: str,
-        max_tokens: int = 500, stage: str = "unknown") -> str:
+              max_tokens: int = 500, stage: str = "unknown") -> str:
         """Call an LLM through Prune, logging the request/response for later reconciliation."""
         start = time.time()
+        content = None
+        usage = None
+        error = None
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -39,17 +42,14 @@ class PruneClient:
 
             # Fallback: some reasoning models (e.g. Nemotron via this Prune routing)
             # never produce a final `content` and instead spend the whole budget on
-            # hidden reasoning. If that happens, fall back to the reasoning text itself.
+            # hidden reasoning. If that happens, fall back to the reasoning text.
             if not content:
                 reasoning = getattr(message, "reasoning", None)
                 if reasoning:
                     content = self._extract_summary_from_reasoning(reasoning)
 
             usage = response.usage.model_dump() if response.usage else None
-            error = None
         except Exception as e:
-            content = None
-            usage = None
             error = str(e)
             raise
         finally:
@@ -63,14 +63,23 @@ class PruneClient:
         """Best-effort extraction of usable text from a reasoning trace that
         never reached a final answer. Known workaround for models that don't
         terminate reasoning within this Prune routing."""
-        # Try to grab text after a "Synthesize"/"Summary" marker if present
         for marker in ["Synthesize Key Points", "**Synthesize", "Keep it to"]:
             if marker in reasoning:
                 reasoning = reasoning.split(marker, 1)[0]
                 break
-        # Strip the boilerplate opening line
         reasoning = reasoning.replace("Here's a thinking process:", "").strip()
         return reasoning
 
-
-        
+    def _log_call(self, stage, model, max_tokens, latency, usage, error, prompt_len):
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "stage": stage,
+            "model": model,
+            "max_tokens": max_tokens,
+            "latency_sec": round(latency, 3),
+            "usage": usage,
+            "error": error,
+            "prompt_char_len": prompt_len,
+        }
+        with open(LOG_PATH, "a") as f:
+            f.write(json.dumps(entry) + "\n")

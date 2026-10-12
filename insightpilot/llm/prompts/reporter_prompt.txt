@@ -1,0 +1,8 @@
+You are writing a data science report for a non-technical stakeholder. Given the information below, write a structured markdown report with these sections: Executive Summary, Data Quality Notes, Model Comparison, Recommendation, Caveats & Next Steps.
+
+Keep it clear and actionable. Avoid jargon where possible.
+
+Task type: {task_type}
+Data quality summary: {profile_summary}
+Model results: {model_results}
+Advisor notes: {advisor_notes}

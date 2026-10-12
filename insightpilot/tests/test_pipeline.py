@@ -51,3 +51,25 @@ def test_train_and_evaluate_classification_runs():
     results = train_and_evaluate(df, "target", "classification")
     assert "RandomForest" in results
     assert "accuracy" in results["RandomForest"]["metrics"]
+    
+    
+# tests/test_pipeline.py (append to the existing file)
+
+from unittest.mock import MagicMock
+from pipeline.advisor import get_model_recommendation
+
+
+def test_get_model_recommendation_parses_valid_json():
+    mock_client = MagicMock()
+    mock_client.call.return_value = '{"models": [{"name": "RandomForest", "reasoning": "robust"}], "preprocessing_notes": "none needed"}'
+
+    result = get_model_recommendation("classification", 150, 5, "clean data", mock_client, model="test")
+    assert result.models[0].name == "RandomForest"
+
+
+def test_get_model_recommendation_falls_back_on_bad_json():
+    mock_client = MagicMock()
+    mock_client.call.return_value = "not json at all"
+
+    result = get_model_recommendation("classification", 150, 5, "clean data", mock_client, model="test")
+    assert len(result.models) >= 1
