@@ -1,0 +1,9 @@
+You are a data quality analyst. Given the following dataset statistics, write a concise plain-English summary (4-6 sentences) covering:
+- Overall data quality (missing values, outliers)
+- Any columns that look skewed or problematic
+- Anything a data scientist should address before modeling
+
+Do not repeat raw numbers verbatim — synthesize and prioritize what matters most.
+
+Dataset statistics:
+{profile_json}

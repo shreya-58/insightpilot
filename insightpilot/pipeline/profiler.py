@@ -1,6 +1,9 @@
-# pipeline/profiler.py
 import pandas as pd
 import numpy as np
+import json
+from pathlib import Path
+
+PROMPT_PATH = Path("llm/prompts/profiler_prompt.txt")
 
 
 def load_csv(filepath: str) -> pd.DataFrame:
@@ -51,3 +54,19 @@ def profile_dataframe(df: pd.DataFrame) -> dict:
         profile["columns"][col] = col_info
 
     return profile
+
+
+
+def generate_profile_summary(profile: dict, client, model: str) -> str:
+    """Call the LLM (via Prune) to summarize profiling stats in plain English."""
+    prompt_template = PROMPT_PATH.read_text()
+    user_prompt = prompt_template.format(profile_json=json.dumps(profile, default=str))
+
+    summary = client.call(
+        model=model,
+        system_prompt="You are a careful, concise data quality analyst.",
+        user_prompt=user_prompt,
+        max_tokens=400,
+        stage="profiler",
+    )
+    return summary
