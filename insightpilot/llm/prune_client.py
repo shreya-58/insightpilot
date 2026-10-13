@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -83,3 +84,24 @@ class PruneClient:
         }
         with open(LOG_PATH, "a") as f:
             f.write(json.dumps(entry) + "\n")
+
+
+    @staticmethod
+    def _extract_summary_from_reasoning(reasoning: str) -> str:
+        """Best-effort extraction of usable text from a reasoning trace that
+        never reached a final answer. Known workaround for models that don't
+        terminate reasoning within this Prune routing."""
+        # Drop numbered meta-analysis sections (e.g. "1. **Analyze User Input:**")
+        reasoning = re.sub(r"^\d+\.\s+\*\*.*?\*\*:.*?(?=^\d+\.|\Z)", "", reasoning, flags=re.MULTILINE | re.DOTALL)
+        reasoning = reasoning.replace("Here's a thinking process:", "").strip()
+
+        # If a synthesis/summary section exists, prefer text after its last heading
+        for marker in ["Synthesize", "Final summary", "In summary"]:
+            idx = reasoning.rfind(marker)
+            if idx != -1:
+                return reasoning[idx:].strip()
+
+        # Otherwise just return the last few sentences, which tend to be closer
+        # to a conclusion than the opening analysis
+        sentences = re.split(r"(?<=[.!?])\s+", reasoning.strip())
+        return " ".join(sentences[-4:]) if len(sentences) > 4 else reasoning

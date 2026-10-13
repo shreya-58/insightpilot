@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import markdown as md_lib
+from weasyprint import HTML
 
 PROMPT_PATH = Path("llm/prompts/reporter_prompt.txt")
 
@@ -22,3 +24,17 @@ def generate_insight_report(task_type: str, profile_summary: str, model_results:
         stage="reporter",
     )
     return report
+
+
+
+def report_to_pdf(report_markdown: str, output_path: str = "report.pdf"):
+    html_content = md_lib.markdown(report_markdown)
+    styled_html = f"""
+    <html><head><style>
+    body {{ font-family: sans-serif; margin: 40px; }}
+    h1, h2 {{ color: #1a1a2e; }}
+    </style></head><body>{html_content}</body></html>
+    """
+    HTML(string=styled_html).write_pdf(output_path)
+    return output_path
+

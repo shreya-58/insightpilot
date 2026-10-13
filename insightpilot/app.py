@@ -9,7 +9,7 @@ from pipeline.profiler import load_csv, profile_dataframe, generate_profile_summ
 from pipeline.task_detector import detect_task_type
 from pipeline.advisor import get_model_recommendation
 from pipeline.trainer import train_and_evaluate
-from pipeline.reporter import generate_insight_report
+from pipeline.reporter import generate_insight_report, report_to_pdf
 from llm.prune_client import PruneClient
 
 
@@ -66,19 +66,42 @@ def run_pipeline(df: pd.DataFrame, target_col: str):
     st.subheader("Insight Report")
     st.markdown(report)
 
-    st.download_button(
-        "Download Report (Markdown)",
-        data=report,
-        file_name="insightpilot_report.md",
-        mime="text/markdown",
-    )
+    # --- Download buttons ---
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.download_button(
+            "Download Report (Markdown)",
+            data=report,
+            file_name="insightpilot_report.md",
+            mime="text/markdown",
+        )
+
+    with col2:
+        try:
+            pdf_path = report_to_pdf(report)
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    "Download Report (PDF)",
+                    data=f,
+                    file_name="insightpilot_report.pdf",
+                    mime="application/pdf",
+                )
+        except Exception as e:
+            st.caption(f"PDF export unavailable: {e}")
 
 
-# --- Page layout / entry point (runs after the function above is defined) ---
+# --- Page layout / entry point ---
 
 st.set_page_config(page_title="InsightPilot", layout="wide")
 st.title("InsightPilot")
 st.caption("AI-Augmented EDA & Model Advisory Tool")
+
+with st.sidebar:
+    st.subheader("Active Models")
+    st.text(f"Profiler: {os.getenv('PROFILER_MODEL')}")
+    st.text(f"Advisor: {os.getenv('ADVISOR_MODEL')}")
+    st.text(f"Reporter: {os.getenv('REPORTER_MODEL')}")
 
 uploaded_file = st.file_uploader("Upload a CSV dataset", type=["csv"])
 

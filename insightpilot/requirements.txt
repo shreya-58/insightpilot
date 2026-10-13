@@ -7,3 +7,5 @@ xgboost
 openai
 pydantic
 streamlit
+markdown
+weasyprint
